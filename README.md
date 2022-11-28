@@ -60,6 +60,8 @@ The sensor state (frequency) and diagnostics all have MQTT auto-discovery messag
 
 ![Home Assistant Device](doc/esp8266thing-ha-device.png)
 
+![Sensor history](doc/frequency-graph.png)
+
 The discovery message for frequency:
 ```
 homeassistant/sensor/esp8266thing/frequency/config
