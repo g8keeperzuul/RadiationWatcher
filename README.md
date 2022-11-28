@@ -211,3 +211,59 @@ severity:
   red: 2.3
 ```
 ![Radiation meter](doc/radiation-gauge.png)
+
+### Sensor Diagnostics in Home Assistant ###
+
+```
+mqtt:
+   sensor:
+    - name: "RadiationWatcher Link Quality"
+      object_id: "esp8266thing_link"      
+      state_topic: "homeassistant/sensor/esp8266thing/diagnostics"                    
+      value_template: "{{ value_json.wifi_rssi | int() }}"
+      entity_category: "diagnostic"
+      state_class: "measurement"
+      icon: "mdi:wifi-strength-2"   
+
+    - name: "RadiationWatcher IP"
+      object_id: "esp8266thing_ip"
+      state_topic: "homeassistant/sensor/esp8266thing/diagnostics"      
+      value_template: "{{ value_json.wifi_ip }}"
+      entity_category: "diagnostic"      
+      icon: "mdi:ip-network"
+      availability:
+        - topic: "homeassistant/sensor/esp8266thing/availability"
+          payload_available: "online"
+          payload_not_available: "offline"
+
+    - name: "RadiationWatcher MAC"
+      object_id: "esp8266thing_mac"
+      state_topic: "homeassistant/sensor/esp8266thing/diagnostics"      
+      value_template: "{{ value_json.wifi_mac }}"
+      entity_category: "diagnostic"      
+      icon: "mdi:network-pos"
+      availability:
+        - topic: "homeassistant/sensor/esp8266thing/availability"
+          payload_available: "online"
+          payload_not_available: "offline"             
+```
+
+The wireless link quality is measured in unitless RSSI.
+Range is from -100 to -30
+RSSI Range | Quality | Color
+--|--|--
+-100..-70 | poor | red
+-70..-50 | moderate | yellow
+-50..-30 | good | green
+
+```
+type: gauge
+entity: sensor.esp8266thing_link
+severity:
+  green: -50
+  yellow: -70
+  red: -100
+min: -100
+max: -30
+```
+
