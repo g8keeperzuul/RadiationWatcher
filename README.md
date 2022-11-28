@@ -106,3 +106,108 @@ homeassistant/sensor/esp8266thing/wifi_rssi/config
 }
 ```
 The other diagnostics (MAC, IP) are similar, but obviously not measurable so lack the state_class.
+
+Manual updates that you will want to add to your Home Assistant configuration.yaml:
+(these tease out the sub-attributes of frequency)
+
+```
+template:
+  - sensor:
+      - name: "Radiation CPM"  # Radiation Detection Event (per minute)
+        unique_id: radiation_cpm
+        device_class: frequency
+        state_class: measurement
+        unit_of_measurement: "cpm"
+        icon: mdi:radioactive
+        state: >
+          {{ state_attr("sensor.esp8266thing_frequency", "cpm") | float(default=0) }}
+
+      - name: "Radiation Dose"
+        unique_id: radiation_dose
+        state_class: measurement
+        unit_of_measurement: "uSv/h"
+        icon: mdi:radioactive
+        state: >
+          {{ state_attr("sensor.esp8266thing_frequency", "dose") | float(default=0) }}
+
+      - name: "Radiation Dose Error"
+        unique_id: radiation_dose_err
+        state_class: measurement
+        unit_of_measurement: "uSv/h"
+        icon: mdi:plus-minus
+        state: >
+          {{ state_attr("sensor.esp8266thing_frequency", "dose_err") | float(default=0) }}
+
+      - name: "Radiation Dose High"
+        unique_id: radiation_dose_hi
+        state_class: measurement
+        unit_of_measurement: "uSv/h"
+        icon: mdi:radioactive
+        state: >
+          {{ (state_attr("sensor.esp8266thing_frequency", "dose")|float(default=0)+state_attr("sensor.esp8266thing_frequency", "dose_err")|float(default=0))|round(2, "common")}}
+
+      - name: "Radiation Dose Low"
+        unique_id: radiation_dose_lo
+        state_class: measurement
+        unit_of_measurement: "uSv/h"
+        icon: mdi:radioactive
+        state: >
+          {{ (state_attr("sensor.esp8266thing_frequency", "dose")|float(default=0)-state_attr("sensor.esp8266thing_frequency", "dose_err")|float(default=0))|round(2, "common")}}
+
+# Get the daily high radiation dose average
+sensor:
+  - name: "Radiation Dose 24h mean"
+    platform: statistics
+    entity_id: sensor.radiation_dose_high
+    state_characteristic: mean
+    max_age:
+      hours: 24
+
+# Create a safetly binary trigger based on daily radiation high dose equivalent exceeding 3 mSv/yr
+binary_sensor:
+  - name: Radiation exceeds Normal per 24h # over normal 3 mSv/yr
+    platform: threshold
+    device_class: safety
+    entity_id: sensor.radiation_dose_24h_mean
+    upper: 0.342
+
+```
+
+Radiation workers: 
+limit of [50 mSv in a single year and 100 mSv over 5 years](https://laws-lois.justice.gc.ca/eng/regulations/SOR-2000-203/FullText.html) (a 20 mSv per year average) 
+
+Recommended hourly limit: 
+
+Annual Exposure | conversion | Hourly Exposure
+--|--|--
+3mSv/yr | 3 * 1000 = 3000 uSv/yr  / 365 = 8.22 uSv/day / 24 | 0.342 uSv/hr 
+20 mSv/yr | 20 * 1000 = 20,000 uSv/yr / 365 = 55 uSv/day / 24 | 2.3 uSv/hr 
+50 mSv/yr | 50 * 1000 = 50,000 uSv/yr / 365 = 137 uSv/day / 24 | 5.7 uSv/hr 
+
+Exposure | Level 
+--|--
+0-3 mSv/yr | normal 
+4-20 mSv/yr | moderate 
+20+ mSv/yr | high 
+
+ 
+A UI gauge can be added with the following ranges:
+
+A max of 6 based on no more than 5.7 uSv/hr for radiation workers
+
+A green area up to 0.342 uSv/hr for normal background radiation, a yellow area up to 2.3 uSv/hr based on normal exposure being up to 20 mSv/yr and a red area beyond that up to 50 mSv/yr for radiation workers.
+
+```
+type: gauge
+entity: sensor.radiation_dose_high
+name: Radiation Dose
+unit: uSv/h
+min: 0
+max: 6
+needle: true
+severity:
+  green: 0
+  yellow: 0.342
+  red: 2.3
+```
+![Radiation meter](doc/radiation-gauge.png)
