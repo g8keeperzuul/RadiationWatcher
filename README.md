@@ -110,6 +110,8 @@ The other diagnostics (MAC, IP) are similar, but obviously not measurable so lac
 Manual updates that you will want to add to your Home Assistant configuration.yaml:
 (these tease out the sub-attributes of frequency)
 
+![Home Assistant sensor readings](doc/RadiationWatcher-readings.png)
+
 ```
 template:
   - sensor:
@@ -213,6 +215,8 @@ severity:
 ![Radiation meter](doc/radiation-gauge.png)
 
 ### Sensor Diagnostics in Home Assistant ###
+
+![Home Assistant RadiationWatcher diagnostics](doc/RadiationWatcher-diagnostics.png)
 
 ```
 mqtt:
